@@ -3,7 +3,9 @@ module Main where
 import Network.Socket
 import Control.Concurrent
 import ReplyCodes
-import MessageParser
+import MessageReceiver
+import Server
+import IRCData
 
 main :: IO ()
 main = do
@@ -21,18 +23,17 @@ mainLoop sock = do
 
 runConn :: (Socket, SockAddr) -> IO ()
 runConn (sock, _) = do
-    send sock "Enter your user nickname.\n"
-    username <- getFullMsg sock $ Incomplete "" 
-    send sock $ show username
-    putStrLn "sent msg"
+    registerUser sock
     close sock
 
--- Receives data until a full message is received.
-getFullMsg :: Socket -> Message -> IO Message
-getFullMsg sock (Complete msg) = return $ Complete msg 
-getFullMsg sock (Incomplete msg) = do
-    str <- recv sock maxMsgSize
-    let newMsg = getMsg str 
-        combinedMsgs = joinMsg (Incomplete msg) (getMsg str)
-    getFullMsg sock combinedMsgs
-      
+registerUser :: Socket -> IO ()
+registerUser sock = do
+    userDetails <- getUserDetails sock
+    let user = userDetails >>= createUser 
+    case user of
+        Nothing -> do
+            send sock "error, nickname already in use"
+            registerUser sock
+        Just u -> do 
+            send sock "user successfully registered." 
+            return ()
