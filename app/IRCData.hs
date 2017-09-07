@@ -1,14 +1,16 @@
 {-Methods and datatypes for all data that must be stored by the IRC server.-}
 
 module IRCData (
-  Nickname(..),
-  Fullname(..),
+  Nickname,
+  Fullname,
+  Channel,
+  User(..),
   createUser
 ) where
 
-newtype Nickname = Nickname String deriving (Eq, Show)
-newtype Fullname = Fullname String deriving (Eq, Show)
-newtype Channel = Channel String deriving (Eq, Show)
+type Nickname = String
+type Fullname = String
+type Channel = String
 
 data User = User {
     nickname :: Nickname,

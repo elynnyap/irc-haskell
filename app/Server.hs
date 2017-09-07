@@ -20,4 +20,4 @@ getUserDetails sock = do
     namemsg <- getFullMsg sock
     let nick = (!! 1) <$> extractParams nickmsg (getMessagePattern "NICK") 
         fullname = (!! 4) <$> extractParams namemsg (getMessagePattern "USER") 
-    return $ (,) <$> (Nickname <$> nick) <*> (Fullname <$> fullname)
+    return $ (,) <$> nick <*> fullname

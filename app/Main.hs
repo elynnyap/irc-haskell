@@ -6,6 +6,8 @@ import ReplyCodes
 import MessageReceiver
 import Server
 import IRCData
+import ReplyGenerator
+import Network.HostName
 
 main :: IO ()
 main = do
@@ -29,11 +31,11 @@ runConn (sock, _) = do
 registerUser :: Socket -> IO ()
 registerUser sock = do
     userDetails <- getUserDetails sock
-    let user = userDetails >>= createUser 
-    case user of
+    case userDetails >>= createUser of
         Nothing -> do
             send sock "error, nickname already in use"
             registerUser sock
         Just u -> do 
-            send sock "user successfully registered." 
+            hostname <- getHostName
+            send sock $ getRPL_WELCOMEReply hostname u 
             return ()

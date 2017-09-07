@@ -67,7 +67,7 @@ joinMsg (Incomplete x) (Incomplete y) = Incomplete $ take msgBodyLength (x ++ y)
 extractNickname :: Message -> Maybe Nickname
 extractNickname (Incomplete _) = Nothing
 extractNickname (Complete str)
-  | cmdIndex == Just 0 && length tokens > 1 = Just $ Nickname $ tokens !! 1
+  | cmdIndex == Just 0 && length tokens > 1 = Just $ tokens !! 1
   | otherwise = Nothing
   where cmdIndex = elemIndex "NICK" tokens
         tokens = words str
