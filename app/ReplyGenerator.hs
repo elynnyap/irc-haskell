@@ -7,9 +7,9 @@ import IRCData
 import ReplyCodes
 import MessageParser
 
-getRPL_WELCOMEReply :: String -> User -> String
-getRPL_WELCOMEReply hostname User{nickname=n} =
+getRPL_WELCOMEReply :: String -> String -> User -> String
+getRPL_WELCOMEReply hostname clienthost User{nickname=n} =
     hostname ++ " " ++ rpl_welcome ++ " " ++ n ++ 
     " :Welcome to the Internet Rely Network " ++ n ++ "!" ++ n 
-    ++ "@host" ++ msgDelimiter
+    ++ "@" ++ clienthost  ++ msgDelimiter
 

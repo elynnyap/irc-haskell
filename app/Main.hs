@@ -8,6 +8,7 @@ import Server
 import IRCData
 import ReplyGenerator
 import Network.HostName
+import Data.Maybe
 
 main :: IO ()
 main = do
@@ -24,18 +25,20 @@ mainLoop sock = do
     mainLoop sock       -- repeat
 
 runConn :: (Socket, SockAddr) -> IO ()
-runConn (sock, _) = do
-    registerUser sock
+runConn (sock, sockAddr) = do
+    (clientHostname, _) <- getNameInfo [] True False sockAddr
+    let clientHost = fromMaybe (show sockAddr) clientHostname 
+    registerUser sock clientHost 
     close sock
 
-registerUser :: Socket -> IO ()
-registerUser sock = do
+registerUser :: Socket -> String -> IO ()
+registerUser sock clientHost = do
     userDetails <- getUserDetails sock
     case userDetails >>= createUser of
         Nothing -> do
             send sock "error, nickname already in use"
-            registerUser sock
+            registerUser sock clientHost
         Just u -> do 
             hostname <- getHostName
-            send sock $ getRPL_WELCOMEReply hostname u 
+            send sock $ getRPL_WELCOMEReply hostname clientHost u 
             return ()
