@@ -9,12 +9,20 @@ import IRCData
 import ReplyGenerator
 import Network.HostName
 import Data.Maybe
+import Control.Applicative
+import Options
+
+data MainOptions = MainOptions { optPort :: Int }
+
+instance Options MainOptions where
+    defineOptions = pure MainOptions 
+        <*> simpleOption "p" 1234 "Port on which server will run"
 
 main :: IO ()
-main = do
+main = runCommand $ \opts args -> do
     sock <- socket AF_INET Stream defaultProtocol -- create socket
     setSocketOption sock ReuseAddr 1 -- make socket immediately reusable
-    bind sock (SockAddrInet 4242 iNADDR_ANY) -- listen on TCP port 4242
+    bind sock (SockAddrInet (toEnum $ optPort opts) iNADDR_ANY) -- listen on TCP port 4242
     listen sock 2 -- set a max of 2 queued connections
     mainLoop sock
 
