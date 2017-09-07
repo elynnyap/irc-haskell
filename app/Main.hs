@@ -16,7 +16,8 @@ data MainOptions = MainOptions { optPort :: Int }
 
 instance Options MainOptions where
     defineOptions = pure MainOptions 
-        <*> simpleOption "p" 1234 "Port on which server will run"
+        <*> defineOption optionType_int (\o -> o
+              { optionShortFlags = ['p'] }) 
 
 main :: IO ()
 main = runCommand $ \opts args -> do
