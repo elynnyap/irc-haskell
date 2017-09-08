@@ -12,12 +12,12 @@ import Data.Maybe
 import Control.Applicative
 import Options
 
-data MainOptions = MainOptions { optPort :: Int }
+data MainOptions = MainOptions { optPort :: Int, optPasswrd :: String }
 
 instance Options MainOptions where
     defineOptions = pure MainOptions 
-        <*> defineOption optionType_int (\o -> o
-              { optionShortFlags = ['p'] }) 
+        <*> defineOption optionType_int (\o -> o { optionShortFlags = ['p'] }) 
+        <*> defineOption optionType_string (\o -> o { optionShortFlags = ['o'] }) 
 
 main :: IO ()
 main = runCommand $ \opts args -> do
@@ -42,10 +42,10 @@ runConn (sock, sockAddr) = do
 
 registerUser :: Socket -> String -> IO ()
 registerUser sock clientHost = do
-    userDetails <- getUserDetails sock
+    userDetails <- getUserDetails sock Nothing Nothing
     case userDetails >>= createUser of
         Nothing -> do
-            send sock "error, nickname already in use"
+            send sock "error, nickname already in use\r\n"
             registerUser sock clientHost
         Just u -> do 
             hostname <- getHostName

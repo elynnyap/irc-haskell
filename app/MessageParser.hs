@@ -7,19 +7,14 @@ module MessageParser(
   getMsg,
   joinMsg,
   getMessagePattern,
-  extractParams 
+  extractParams,
+  isComplete 
 ) where
 
 import Data.List.Split
 import Data.List (elemIndex)
 import Data.Maybe (fromJust, isJust, isNothing)
 import IRCData
-
--- A message is either complete (marked by delimiter) or incomplete.
-data Message = 
-    Complete String | 
-    Incomplete String
-    deriving (Eq, Show)
 
 -- Defines the pattern for valid messages in the IRC protocol
 data MessagePattern = Pattern {
@@ -47,6 +42,10 @@ msgDelimiter = "\r\n"
 -- Maximum number of characters in a message body, excluding delimiter
 msgBodyLength :: Int
 msgBodyLength = 510
+
+isComplete :: Message -> Bool
+isComplete (Complete _) = True
+isComplete (Incomplete _) = False
 
 -- Extracts the message from a String
 -- A single message is a string of max 512 chars, 

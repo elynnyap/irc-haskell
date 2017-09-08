@@ -1,21 +1,27 @@
 {-Methods for receiving messages according to the IRC protocol.-}
 
 module MessageReceiver(
-  getFullMsg
+  getFullMsgs
 ) where
 
 import Network.Socket
 import MessageParser
 
 -- Receives a full message.
-getFullMsg :: Socket -> IO Message
-getFullMsg sock = listenForMsg sock $ Incomplete ""
+getFullMsgs :: Socket -> IO [Message]
+getFullMsgs sock = listenForMsgs sock $ Incomplete ""
 
--- Receives data until a full message is received.
-listenForMsg :: Socket -> Message -> IO Message
-listenForMsg sock (Complete msg) = return $ Complete msg 
-listenForMsg sock (Incomplete msg) = do
+-- Receives data until the last char is a CRLF 
+listenForMsgs :: Socket -> [Message] -> IO [Message]
+listenForMsgs sock msgs 
+  | isComplete (last msgs) = return msgs
+  | otherwise = do
+      str <- recv sock maxMsgSize
+      let newMsg = 
+    
+listenForMsgs sock (Complete msg) = return $ Complete msg 
+listenForMsgs sock (Incomplete msg) = do
     str <- recv sock maxMsgSize
     let newMsg = getMsg str 
         combinedMsgs = joinMsg (Incomplete msg) (getMsg str)
-    listenForMsg sock combinedMsgs
+    listenForMsgs sock combinedMsgs

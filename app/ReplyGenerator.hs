@@ -9,7 +9,7 @@ import MessageParser
 
 getRPL_WELCOMEReply :: String -> String -> User -> String
 getRPL_WELCOMEReply hostname clienthost User{nickname=n} =
-    hostname ++ " " ++ rpl_welcome ++ " " ++ n ++ 
-    " :Welcome to the Internet Rely Network " ++ n ++ "!" ++ n 
-    ++ "@" ++ clienthost  ++ msgDelimiter
+    ":" ++ hostname ++ " " ++ rpl_welcome ++ " " ++ n ++ 
+    " :Welcome to the Internet Relay Network " ++ n ++ "!" ++ n 
+    ++ "@" ++ clienthost ++ msgDelimiter
 
