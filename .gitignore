@@ -23,3 +23,5 @@ cabal.project.local
 alltests
 thoughts.txt
 run-tests.sh
+tests/report.html
+tests/json.html
