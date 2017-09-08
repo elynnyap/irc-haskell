@@ -4,17 +4,18 @@ module MessageParser(
   Message(..),
   maxMsgSize,
   msgDelimiter,
-  getMsg,
-  joinMsg,
-  getMessagePattern,
-  extractParams,
-  isComplete 
+  parseMsgs 
 ) where
 
 import Data.List.Split
 import Data.List (elemIndex)
 import Data.Maybe (fromJust, isJust, isNothing)
 import IRCData
+
+data Message = Message {
+                 category :: String,
+                 params :: [String]
+               } deriving Show
 
 -- Defines the pattern for valid messages in the IRC protocol
 data MessagePattern = Pattern {
@@ -43,41 +44,31 @@ msgDelimiter = "\r\n"
 msgBodyLength :: Int
 msgBodyLength = 510
 
-isComplete :: Message -> Bool
-isComplete (Complete _) = True
-isComplete (Incomplete _) = False
+-- Scans a string to produce an array of valid messages.
+parseMsgs :: String -> [Message]
+parseMsgs str = foldr f [] tokens
+  where f str msgs = case createMsg str of 
+                       Nothing -> msgs
+                       Just m -> msgs ++ [m] 
+        tokens = map truncate $ splitOn msgDelimiter str
+        truncate = take msgBodyLength 
 
--- Extracts the message from a String
--- A single message is a string of max 512 chars, 
--- including the crlf pair `\r\n`. Longer messages are truncated.
-getMsg :: String -> Message
-getMsg str
-  | length tokens > 1 = Complete $ take msgBodyLength body
-  | otherwise         = Incomplete $ take msgBodyLength body
-  where tokens = splitOn msgDelimiter str 
-        body = head tokens
-
--- Concatenates two messages if the first is incomplete
-joinMsg :: Message -> Message -> Message
-joinMsg (Complete x) _ = Complete x -- do nothing if first is already complete
-joinMsg (Incomplete x) (Complete y) = Complete $ take msgBodyLength (x ++ y)  
-joinMsg (Incomplete x) (Incomplete y) = Incomplete $ take msgBodyLength (x ++ y)
-
-extractNickname :: Message -> Maybe Nickname
-extractNickname (Incomplete _) = Nothing
-extractNickname (Complete str)
-  | cmdIndex == Just 0 && length tokens > 1 = Just $ tokens !! 1
+-- Scans a string to produce a Message if it's valid; Nothing otherwise.
+createMsg :: String -> Maybe Message
+createMsg str 
+  | null tokens = Nothing
+  | isJust params = Just $ Message cmd (fromJust params)
   | otherwise = Nothing
-  where cmdIndex = elemIndex "NICK" tokens
+  where params = extractParams str (getMessagePattern cmd) 
+        cmd = head tokens
         tokens = words str
 
--- Given a message and its pattern, returns a Just String if the message
+-- Given a string and its message pattern, returns a Just String if the message
 -- fulfills the required pattern (i.e. is valid for its type) and a Nothing otherwise
-extractParams :: Message -> Maybe MessagePattern -> Maybe [String]
-extractParams (Incomplete _) _ = Nothing
+extractParams :: String -> Maybe MessagePattern -> Maybe [String]
 extractParams _ Nothing = Nothing 
-extractParams (Complete str) (Just (Pattern numParams command delimiter))
-  | patternMatches = Just tokens
+extractParams str (Just (Pattern numParams command delimiter))
+  | patternMatches = Just $ drop 1 tokens
   | otherwise = Nothing
   where patternMatches = isJust tokensResult && numParamsMatches && commandMatches 
         numParamsMatches = numParams == length tokens - 1 

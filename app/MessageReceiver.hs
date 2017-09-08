@@ -7,21 +7,16 @@ module MessageReceiver(
 import Network.Socket
 import MessageParser
 
--- Receives a full message.
+-- Receives full messages.
 getFullMsgs :: Socket -> IO [Message]
-getFullMsgs sock = listenForMsgs sock $ Incomplete ""
+getFullMsgs sock = parseMsgs <$> input
+  where input = listenForMsgs sock "" 
 
 -- Receives data until the last char is a CRLF 
-listenForMsgs :: Socket -> [Message] -> IO [Message]
-listenForMsgs sock msgs 
-  | isComplete (last msgs) = return msgs
+listenForMsgs :: Socket -> String -> IO String 
+listenForMsgs sock buffer 
+  | lastTwoChars == msgDelimiter = return buffer
   | otherwise = do
       str <- recv sock maxMsgSize
-      let newMsg = 
-    
-listenForMsgs sock (Complete msg) = return $ Complete msg 
-listenForMsgs sock (Incomplete msg) = do
-    str <- recv sock maxMsgSize
-    let newMsg = getMsg str 
-        combinedMsgs = joinMsg (Incomplete msg) (getMsg str)
-    listenForMsgs sock combinedMsgs
+      listenForMsgs sock (buffer ++ str)
+  where lastTwoChars = drop (length buffer - 2) buffer

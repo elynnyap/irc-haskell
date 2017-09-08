@@ -43,11 +43,11 @@ runConn (sock, sockAddr) = do
 registerUser :: Socket -> String -> IO ()
 registerUser sock clientHost = do
     userDetails <- getUserDetails sock Nothing Nothing
-    case userDetails >>= createUser of
+    case createUser userDetails of
         Nothing -> do
             send sock "error, nickname already in use\r\n"
             registerUser sock clientHost
-        Just u -> do 
+        Just user -> do 
             hostname <- getHostName
-            send sock $ getRPL_WELCOMEReply hostname clientHost u 
+            send sock $ getRPL_WELCOMEReply hostname clientHost user 
             return ()
