@@ -2,21 +2,20 @@
 
 module IRCData (
   Nickname,
+  Username,
   Fullname,
   Channel,
   User(..),
-  createUser
 ) where
 
 type Nickname = String
+type Username = String
 type Fullname = String
 type Channel = String
 
 data User = User {
     nickname :: Nickname,
+    username :: Username,
     fullname :: Fullname,
     channels :: [Channel]
 } deriving (Eq, Show)
-
-createUser :: (Nickname, Fullname) -> Maybe User
-createUser (nick, fullname) = Just $ User nick fullname []

@@ -1,16 +1,18 @@
 module Main where
 
-import Network.Socket
-import Control.Concurrent
-import ReplyCodes
-import MessageReceiver
-import Server
-import IRCData
-import ReplyGenerator
-import Network.HostName
-import Data.Maybe
 import Control.Applicative
+import Control.Concurrent
+import Data.HashSet
+import Data.IORef
+import Data.Maybe
+import IRCData
+import MessageReceiver
+import Network.HostName
+import Network.Socket
 import Options
+import ReplyCodes
+import ReplyGenerator
+import Server
 
 data MainOptions = MainOptions { optPort :: Int, optPasswrd :: String }
 
@@ -29,25 +31,21 @@ main = runCommand $ \opts args -> do
 
 mainLoop :: Socket -> IO ()
 mainLoop sock = do
+    allNicks <- newIORef (fromList [] :: HashSet String)
     conn <- accept sock -- accept a connection and handle it
-    forkIO (runConn conn) -- spawn new thread for each connection
+    forkIO (runConn conn allNicks) -- spawn new thread for each connection
     mainLoop sock       -- repeat
 
-runConn :: (Socket, SockAddr) -> IO ()
-runConn (sock, sockAddr) = do
+runConn :: (Socket, SockAddr) -> IORef (HashSet String) -> IO ()
+runConn (sock, sockAddr) allNicks = do
     (clientHostname, _) <- getNameInfo [] True False sockAddr
     let clientHost = fromMaybe (show sockAddr) clientHostname 
-    registerUser sock clientHost 
-    close sock
+    registerUser sock clientHost allNicks
+    runConn (sock, sockAddr) allNicks
 
-registerUser :: Socket -> String -> IO ()
-registerUser sock clientHost = do
-    userDetails <- getUserDetails sock Nothing Nothing
-    case createUser userDetails of
-        Nothing -> do
-            send sock "error, nickname already in use\r\n"
-            registerUser sock clientHost
-        Just user -> do 
-            hostname <- getHostName
-            send sock $ getRPL_WELCOMEReply hostname clientHost user 
-            return ()
+registerUser :: Socket -> String -> IORef (HashSet String) -> IO ()
+registerUser sock clientHost allNicks = do
+    user <- createUser sock Nothing Nothing Nothing allNicks
+    hostname <- getHostName
+    send sock $ getRPL_WELCOMEReply hostname clientHost user 
+    return ()

@@ -8,8 +8,10 @@ import ReplyCodes
 import MessageParser
 
 getRPL_WELCOMEReply :: String -> String -> User -> String
-getRPL_WELCOMEReply hostname clienthost User{nickname=n} =
+getRPL_WELCOMEReply hostname clienthost user =
     ":" ++ hostname ++ " " ++ rpl_welcome ++ " " ++ n ++ 
-    " :Welcome to the Internet Relay Network " ++ n ++ "!" ++ n 
+    " :Welcome to the Internet Relay Network " ++ n ++ "!" ++ u 
     ++ "@" ++ clienthost ++ msgDelimiter
+    where n = nickname user
+          u = username user
 
