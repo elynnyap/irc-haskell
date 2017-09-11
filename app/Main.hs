@@ -27,14 +27,14 @@ main = runCommand $ \opts args -> do
     setSocketOption sock ReuseAddr 1 -- make socket immediately reusable
     bind sock (SockAddrInet (toEnum $ optPort opts) iNADDR_ANY) -- listen on TCP port 4242
     listen sock 2 -- set a max of 2 queued connections
-    mainLoop sock
-
-mainLoop :: Socket -> IO ()
-mainLoop sock = do
     allNicks <- newIORef (fromList [] :: HashSet String)
+    mainLoop sock allNicks
+
+mainLoop :: Socket -> IORef (HashSet String) -> IO ()
+mainLoop sock allNicks = do
     conn <- accept sock -- accept a connection and handle it
     forkIO (runConn conn allNicks) -- spawn new thread for each connection
-    mainLoop sock       -- repeat
+    mainLoop sock allNicks      -- repeat
 
 runConn :: (Socket, SockAddr) -> IORef (HashSet String) -> IO ()
 runConn (sock, sockAddr) allNicks = do

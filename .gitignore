@@ -24,4 +24,4 @@ alltests
 thoughts.txt
 run-tests.sh
 tests/report.html
-tests/json.html
+tests/report.json

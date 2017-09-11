@@ -16,20 +16,34 @@ import MessageReceiver
 import Network.Socket
 
 createUser :: Socket -> Maybe Nickname -> Maybe Fullname -> Maybe Username -> IORef (HashSet String) -> IO User
-createUser sock nick fullname username reg_nicks = 
+createUser sock nick fullname username allNicks = 
     if isNothing nick || isNothing fullname || isNothing username then do
         msgs <- getFullMsgs sock 
-        (nick', fullname', username') <- processUserReg msgs
+        (nick', fullname', username') <- processUserReg msgs allNicks sock
         let n'  = nick' <|> nick
             fn' = fullname' <|> fullname
             u'  = username' <|> username
-        createUser sock n' fn' u' reg_nicks
-    else return $ User (fromJust nick) (fromJust fullname) (fromJust username) []
+        createUser sock n' fn' u' allNicks
+    else do
+        let addNick set = (insert (fromJust nick) set, ())
+        atomicModifyIORef' allNicks addNick
+        set' <- readIORef allNicks
+        print set'
+        return $ User (fromJust nick) (fromJust username) (fromJust fullname) []
 
-processUserReg :: [Message] -> IO (Maybe Nickname, Maybe Fullname, Maybe Username)
-processUserReg = Data.List.foldl' f' (Nothing, Nothing, Nothing) 
-    where cat = category msg
-          f' (n, fn, u) msg   
-              | cat == "NICK" = (Just $ head (params msg), fn, u)
-              | cat == "USER" = (n, Just $ params msg !! 3, Just $ head $ params msg)
-              | otherwise = (n, fn, u)
+processUserReg :: [Message] -> IORef (HashSet String) -> Socket -> IO (Maybe Nickname, Maybe Fullname, Maybe Username)
+processUserReg msgs nicks sock = Data.List.foldl' f' (pure (Nothing, Nothing, Nothing)) msgs
+    where f' tup msg = do  
+            (n, fn, u) <- tup
+            case category msg of
+                "NICK" -> do
+                    let nick = head $ params msg
+                    nickExists <- member nick <$> readIORef nicks 
+                    putStrLn $ "nickExists: " ++ show nickExists
+                    if nickExists then do
+                        send sock "error, nick already registered"
+                        return (n, fn, u)
+                    else return (Just nick, fn, u)
+                "USER" -> return (n, Just $ params msg !! 3, Just $ head $ params msg)
+                _ -> return (n, fn, u)
+
