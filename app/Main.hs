@@ -48,4 +48,7 @@ registerUser :: Socket -> String -> String -> IORef Directory -> IO User
 registerUser sock clientHost serverHost directory = do
     user <- createUser sock Nothing Nothing Nothing directory
     send sock $ getRPL_WELCOME serverHost clientHost user 
+    send sock $ getRPL_YOURHOST serverHost
+    send sock $ getRPL_CREATED serverHost
+    send sock $ getRPL_MYINFO serverHost
     return user 
