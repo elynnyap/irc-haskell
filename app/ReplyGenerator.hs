@@ -1,7 +1,8 @@
 {-Module for generating replies sent by IRC server to client(s)-}
 module ReplyGenerator (
     getRPL_WELCOME,
-    getERR_NICKNAMEINUSE
+    getERR_NICKNAMEINUSE,
+    getQUITReply
 ) where
 
 import IRCData
@@ -18,3 +19,6 @@ getRPL_WELCOME hostname clienthost user =
 
 getERR_NICKNAMEINUSE :: Nickname -> String
 getERR_NICKNAMEINUSE nick = nick ++ " :Nickname is already in use" ++ msgDelimiter
+
+getQUITReply :: String -> String -> String
+getQUITReply clientHost msg = "Closing Link: " ++ clientHost ++ " (" ++ msg ++ ")" ++ msgDelimiter

@@ -7,6 +7,7 @@ module Server (
 where
 
 import Control.Applicative ((<|>))
+import Control.Monad (when)
 import Data.HashSet
 import Data.IORef
 import Data.List (foldl')
@@ -51,18 +52,27 @@ runSession :: Session -> IO ()
 
 runSession session = do
     msgs <- getFullMsgs $ sock session
-    mapM_ (processMsg session) msgs -- don't use mapM, define a recursive function
-    runSession session
+    continueSession <- processMsgs session msgs 
+    when continueSession $ runSession session
 
-processMsg :: Session -> Message -> IO ()
-processMsg session msg = case category msg of
-    "QUIT" -> processQuit session msg
-    _ -> return ()
+-- Processes a list of messages, returning True if session should continue
+processMsgs :: Session -> [Message] -> IO Bool
+processMsgs _ [] = return True
+processMsgs session (msg:msgs) = case category msg of
+    "QUIT" -> do
+        processQuit session msg
+        return False
+    _ -> do
+        process session msg
+        processMsgs session msgs
 
 processQuit :: Session -> Message -> IO () 
-processQuit Session{sock=sock, user=user, directory=directory} msg = do
-    send sock "Quit message received\n"
+processQuit Session{sock=sock, user=user, clientHostname=clientHostname, directory=directory} msg = do
     let f dir = (removeUser user dir, ())
     atomicModifyIORef' directory f
+    send sock $ getQUITReply clientHostname (head $ params msg) 
     close sock
     return ()
+
+process :: Session -> Message -> IO ()
+process _ _ = return ()
