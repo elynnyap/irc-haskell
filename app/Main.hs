@@ -27,25 +27,25 @@ main = runCommand $ \opts args -> do
     setSocketOption sock ReuseAddr 1 -- make socket immediately reusable
     bind sock (SockAddrInet (toEnum $ optPort opts) iNADDR_ANY) -- listen on TCP port 4242
     listen sock 2 -- set a max of 2 queued connections
-    allNicks <- newIORef (fromList [] :: HashSet String)
-    mainLoop sock allNicks
+    directory <- newIORef newDirectory
+    mainLoop sock directory
 
-mainLoop :: Socket -> IORef (HashSet String) -> IO ()
-mainLoop sock allNicks = do
+mainLoop :: Socket -> IORef Directory -> IO ()
+mainLoop sock directory = do
     conn <- accept sock -- accept a connection and handle it
-    forkIO (runConn conn allNicks) -- spawn new thread for each connection
-    mainLoop sock allNicks      -- repeat
+    forkIO (runConn conn directory) -- spawn new thread for each connection
+    mainLoop sock directory      -- repeat
 
-runConn :: (Socket, SockAddr) -> IORef (HashSet String) -> IO ()
-runConn (sock, sockAddr) allNicks = do
+runConn :: (Socket, SockAddr) -> IORef Directory -> IO ()
+runConn (sock, sockAddr) directory = do
     (clientHostname, _) <- getNameInfo [] True False sockAddr
+    serverHost <- getHostName
     let clientHost = fromMaybe (show sockAddr) clientHostname 
-    registerUser sock clientHost allNicks
-    runConn (sock, sockAddr) allNicks
+    user <- registerUser sock clientHost serverHost directory
+    runSession $ Session user clientHost serverHost sock directory 
 
-registerUser :: Socket -> String -> IORef (HashSet String) -> IO ()
-registerUser sock clientHost allNicks = do
-    user <- createUser sock Nothing Nothing Nothing allNicks
-    hostname <- getHostName
-    send sock $ getRPL_WELCOMEReply hostname clientHost user 
-    return ()
+registerUser :: Socket -> String -> String -> IORef Directory -> IO User 
+registerUser sock clientHost serverHost directory = do
+    user <- createUser sock Nothing Nothing Nothing directory
+    send sock $ getRPL_WELCOME serverHost clientHost user 
+    return user 

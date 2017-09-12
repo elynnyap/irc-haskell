@@ -30,6 +30,7 @@ getMessagePattern "USER" = Just $ Pattern 4 "USER" $ Just ':'
 getMessagePattern "PRIVMSG" = Just $ Pattern 2 "PRIVMSG" $ Just ':'
 getMessagePattern "JOIN" = Just $ Pattern 1 "JOIN" Nothing
 getMessagePattern "PART" = Just $ Pattern 2 "PART" $ Just ':'
+getMessagePattern "QUIT" = Just $ Pattern 1 "QUIT" $ Just ':'
 getMessagePattern _ = Nothing
 
 -- Maximum size of each message in bytes

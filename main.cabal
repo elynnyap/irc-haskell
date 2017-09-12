@@ -22,5 +22,6 @@ executable chat-server-exe
                         split, 
                         hostname, 
                         options, 
-                        unordered-containers 
+                        unordered-containers,
+                        hashable 
    default-language:    Haskell2010
