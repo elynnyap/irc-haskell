@@ -17,6 +17,7 @@ import MessageParser
 import MessageReceiver
 import Network.Socket
 import ReplyGenerator
+import Data.Foldable (forM_)
 
 createUser :: Socket -> Maybe Nickname -> Maybe Fullname -> Maybe Username -> IORef Directory -> IO User
 createUser sock nick fullname username directory = 
@@ -49,22 +50,21 @@ processUserReg msgs directory sock = Data.List.foldl' f' (pure (Nothing, Nothing
                 _ -> return (n, fn, u)
 
 runSession :: Session -> IO () 
-
 runSession session = do
     msgs <- getFullMsgs $ sock session
-    continueSession <- processMsgs session msgs 
-    when continueSession $ runSession session
+    session' <- processMsgs session msgs 
+    forM_ session' runSession
 
--- Processes a list of messages, returning True if session should continue
-processMsgs :: Session -> [Message] -> IO Bool
-processMsgs _ [] = return True
+-- Processes a list of messages, returning Nothing if session is terminated
+processMsgs :: Session -> [Message] -> IO (Maybe Session)
+processMsgs session [] = return $ Just session
 processMsgs session (msg:msgs) = case category msg of
     "QUIT" -> do
         processQuit session msg
-        return False
+        return Nothing
     _ -> do
-        process session msg
-        processMsgs session msgs
+        session' <- process session msg
+        processMsgs session' msgs
 
 processQuit :: Session -> Message -> IO () 
 processQuit Session{sock=sock, user=user, clientHostname=clientHostname, directory=directory} msg = do
@@ -74,9 +74,18 @@ processQuit Session{sock=sock, user=user, clientHostname=clientHostname, directo
     close sock
     return ()
 
-process :: Session -> Message -> IO ()
-process Session{sock=sock} msg = case category msg of
+process :: Session -> Message -> IO Session
+process session@Session{user=user, clientHostname=clientHostname, serverHostname=serverHostname, sock=sock, directory=directory} msg = case category msg of
     "USER" -> do
         send sock getERR_ALREADYREGISTRED
-        return ()
-    _ -> return ()
+        return session
+    "NICK" -> do
+        let newNick = head $ params msg
+        nickChanged <- changeNick newNick user directory
+        if nickChanged then do
+            let user' = user { nickname = newNick }
+            return $ session { user = user' }
+        else do
+            send sock $ getERR_NICKNAMEINUSE newNick
+            return session
+    _ -> return session

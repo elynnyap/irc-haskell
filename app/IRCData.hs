@@ -11,12 +11,13 @@ module IRCData (
   newDirectory,
   addUser,
   removeUser,
-  nickIsTaken
+  nickIsTaken,
+  changeNick
 ) where
 
 import Network.Socket
 import Data.List (delete)
-import Data.HashMap.Strict
+import Data.HashMap.Strict as HashMap
 import Data.Hashable
 import Data.IORef
 
@@ -60,7 +61,17 @@ addUser user Directory{users=users} = Directory users'
 
 removeUser :: User -> Directory -> Directory
 removeUser user Directory{users=users} = Directory users' 
-    where users' = Data.HashMap.Strict.delete (nickname user) users
+    where users' = HashMap.delete (nickname user) users
 
 nickIsTaken :: Nickname -> Directory -> Bool
 nickIsTaken nick dir = member nick (users dir)
+
+-- Updates a user's nick if possible; returns False if nick already taken.
+changeNick :: Nickname -> User -> IORef Directory -> IO Bool
+changeNick newNick user@User{nickname=nickname, username=username, fullname=fullname, channels=channels} dir = do
+    nickUnavailable <- nickIsTaken newNick <$> readIORef dir 
+    if nickUnavailable then return False
+    else do
+        let f Directory{users=dir} = (Directory $ HashMap.insert newNick user{nickname=newNick} $ HashMap.delete nickname dir, ())
+        atomicModifyIORef' dir f 
+        return True
