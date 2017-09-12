@@ -2,6 +2,7 @@
 module ReplyGenerator (
     getRPL_WELCOME,
     getERR_NICKNAMEINUSE,
+    getERR_ALREADYREGISTRED,
     getQUITReply
 ) where
 
@@ -22,3 +23,6 @@ getERR_NICKNAMEINUSE nick = nick ++ " :Nickname is already in use" ++ msgDelimit
 
 getQUITReply :: String -> String -> String
 getQUITReply clientHost msg = "Closing Link: " ++ clientHost ++ " (" ++ msg ++ ")" ++ msgDelimiter
+
+getERR_ALREADYREGISTRED :: String
+getERR_ALREADYREGISTRED = ":Unauthorized command (already registered)" ++ msgDelimiter

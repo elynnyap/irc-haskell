@@ -75,4 +75,8 @@ processQuit Session{sock=sock, user=user, clientHostname=clientHostname, directo
     return ()
 
 process :: Session -> Message -> IO ()
-process _ _ = return ()
+process Session{sock=sock} msg = case category msg of
+    "USER" -> do
+        send sock getERR_ALREADYREGISTRED
+        return ()
+    _ -> return ()
